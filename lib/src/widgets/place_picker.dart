@@ -180,13 +180,10 @@ class PlacePicker extends StatefulWidget {
     this.usePinPointingSearch = false,
     this.pinPointingDebounceDuration = 500,
     this.pinPointingPinWidgetBuilder,
-
     this.confirmBtnBgColor,
     this.confirmBtnTextColor,
     this.confirmBtnTextStyle,
-
     this.autocompletePlacesSearchRadius,
-
   });
 
   @override
@@ -195,8 +192,7 @@ class PlacePicker extends StatefulWidget {
 
 /// Place picker state
 
-class PlacePickerState extends State<PlacePicker>
-    with TickerProviderStateMixin {
+class PlacePickerState extends State<PlacePicker> with TickerProviderStateMixin {
   /// Map Controller Completer
   final Completer<GoogleMapController> mapController = Completer();
 
@@ -358,6 +354,7 @@ class PlacePickerState extends State<PlacePicker>
       markers: markers,
       myLocationButtonEnabled: false,
       mapToolbarEnabled: true,
+      zoomControlsEnabled: false,
       onMapCreated: onMapCreated,
       onCameraIdle: onCameraIdle,
       onCameraMoveStarted: onCameraMoveStarted,
@@ -437,9 +434,7 @@ class PlacePickerState extends State<PlacePicker>
     /// if not pin pointing search
     /// set pin state as dragging and update and
     /// call the places API after the debounce is completed.
-    if (widget.usePinPointingSearch &&
-        _pinState == PinState.dragging &&
-        cameraPosition != null) {
+    if (widget.usePinPointingSearch && _pinState == PinState.dragging && cameraPosition != null) {
       _debouncePinPointing(cameraPosition!.target);
     }
 
@@ -515,17 +510,16 @@ class PlacePickerState extends State<PlacePicker>
   /// Selected Place Widget
   Widget _buildSelectedPlace() {
     if (widget.selectedPlaceWidgetBuilder == null) {
-
-      return locationResult != null
+      return _geocodingResult != null
           ? SafeArea(
               top: false,
               bottom: !widget.enableNearbyPlaces,
               child: SelectPlaceWidget(
                 locationName: getLocationName(),
                 formattedAddress: getFormattedLocationName(),
-                onTap: locationResult != null
+                onTap: _geocodingResult != null
                     ? () {
-                        widget.onPlacePicked?.call(locationResult!);
+                        widget.onPlacePicked?.call(_geocodingResult!);
                       }
                     : null,
                 actionText: widget.localizationConfig.selectActionLocation,
@@ -538,7 +532,6 @@ class PlacePickerState extends State<PlacePicker>
               ),
             )
           : const SizedBox.shrink();
-
     } else {
       return Builder(
         builder: (ctx) => widget.selectedPlaceWidgetBuilder!(
@@ -615,13 +608,10 @@ class PlacePickerState extends State<PlacePicker>
             borderRadius: BorderRadius.circular(15.0),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15.0),
               ),
-
               color: Theme.of(context).canvasColor,
-
               child: Row(
                 children: <Widget>[
                   SizedBox(
@@ -659,8 +649,7 @@ class PlacePickerState extends State<PlacePicker>
       );
 
       if (response.statusCode != 200) {
-        throw Exception(
-            'Failed to load auto complete predictions of place: $place.');
+        throw Exception('Failed to load auto complete predictions of place: $place.');
       }
 
       final responseJson = jsonDecode(response.body);
@@ -679,18 +668,16 @@ class PlacePickerState extends State<PlacePicker>
     }
   }
 
-
   /// Builds the auto complete search endpoint
   String _buildAutoCompleteEndpoint(String place) {
     final locationQuery =
-        locationResult != null ? '&location=${locationResult!.latLng?.latitude},${locationResult!.latLng?.longitude}' : '';
+        _geocodingResult != null ? '&location=${_geocodingResult!.latLng?.latitude},${_geocodingResult!.latLng?.longitude}' : '';
 
     return 'https://maps.googleapis.com/maps/api/place/autocomplete/json?'
         'key=${widget.apiKey}&'
         'language=${widget.localizationConfig.languageCode}&'
         'input=$place&sessiontoken=$sessionToken$locationQuery';
   }
-
 
   /// Parses the `predictions` into `RichSuggestion` array.
   List<RichSuggestion> _parseAutoCompleteSuggestions(List<dynamic>? predictions) {
@@ -894,17 +881,12 @@ class PlacePickerState extends State<PlacePicker>
 
       final geocodingResponse = geocodingResponseFromJson(response.body);
 
-      if (geocodingResponse.results != null &&
-          geocodingResponse.results!.isNotEmpty) {
+      if (geocodingResponse.results != null && geocodingResponse.results!.isNotEmpty) {
         /// Loop through all the results provided by google geocoding API
-        for (int resultIdx = 0;
-            resultIdx < geocodingResponse.results!.length;
-            resultIdx++) {
-          final GeocodingResultGG geocodingResultRaw =
-              geocodingResponse.results![resultIdx];
+        for (int resultIdx = 0; resultIdx < geocodingResponse.results!.length; resultIdx++) {
+          final GeocodingResultGG geocodingResultRaw = geocodingResponse.results![resultIdx];
 
-          if (geocodingResultRaw.addressComponents != null &&
-              geocodingResultRaw.addressComponents!.isNotEmpty) {
+          if (geocodingResultRaw.addressComponents != null && geocodingResultRaw.addressComponents!.isNotEmpty) {
             /// Initialize the short and long variables
             String name = "";
             String? routeShortName,
@@ -936,11 +918,9 @@ class PlacePickerState extends State<PlacePicker>
 
             /// Loop through all the address components for each results
             for (int addressComponentsIdx = 0;
-                addressComponentsIdx <
-                    geocodingResultRaw.addressComponents!.length;
+                addressComponentsIdx < geocodingResultRaw.addressComponents!.length;
                 addressComponentsIdx++) {
-              final AddressComponentGG addressComponentRaw =
-                  geocodingResultRaw.addressComponents![addressComponentsIdx];
+              final AddressComponentGG addressComponentRaw = geocodingResultRaw.addressComponents![addressComponentsIdx];
 
               /// Types provided for each address components by geocoding API from google
               final types = addressComponentRaw.types;
@@ -1018,10 +998,8 @@ class PlacePickerState extends State<PlacePicker>
                   shortName: countryShortName,
                 )
                 ..locality = AddressComponent(
-                  longName:
-                      localityLongName ?? administrativeAreaLevel1LongName,
-                  shortName:
-                      localityShortName ?? administrativeAreaLevel1ShortName,
+                  longName: localityLongName ?? administrativeAreaLevel1LongName,
+                  shortName: localityShortName ?? administrativeAreaLevel1ShortName,
                 )
                 ..administrativeAreaLevel1 = AddressComponent(
                   longName: administrativeAreaLevel1LongName,
@@ -1069,12 +1047,10 @@ class PlacePickerState extends State<PlacePicker>
   /// Fetches and updates the nearby places to the provided lat,lng
   Future<void> getNearbyPlaces(LatLng latLng) async {
     try {
-
       final response = await googlePlacePickerService.nearbySearch(
         latLng,
         language: widget.localizationConfig.languageCode,
       );
-
 
       if (response.statusCode != 200) {
         throw Exception('Failed to fetch nearby places of location: $latLng.');
@@ -1220,7 +1196,6 @@ class PlacePickerState extends State<PlacePicker>
       return widget.localizationConfig.unnamedLocation;
     }
     return _geocodingResult?.name;
-
   }
 
   /// Utility function to get clean readable formatted address of a location.
