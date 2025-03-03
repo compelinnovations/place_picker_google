@@ -151,6 +151,16 @@ class PlacePicker extends StatefulWidget {
   /// according to the current location
   final num? autocompletePlacesSearchRadius;
 
+  /// Region for restricting results to a set of regions
+  /// region: "us"
+  final String? autocompletePlacesSearchRegion;
+
+  /// Bounds for restricting results to a set of bounds
+  /// strictBounds: false
+  final bool? strictBounds;
+
+  /// Language code for Places API results
+
   const PlacePicker({
     super.key,
     required this.apiKey,
@@ -184,6 +194,8 @@ class PlacePicker extends StatefulWidget {
     this.confirmBtnTextColor,
     this.confirmBtnTextStyle,
     this.autocompletePlacesSearchRadius,
+    this.autocompletePlacesSearchRegion,
+    this.strictBounds = false,
   });
 
   @override
@@ -610,8 +622,8 @@ class PlacePickerState extends State<PlacePicker> with TickerProviderStateMixin 
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15.0),
+                color: Theme.of(context).canvasColor,
               ),
-              color: Theme.of(context).canvasColor,
               child: Row(
                 children: <Widget>[
                   SizedBox(
@@ -646,6 +658,8 @@ class PlacePickerState extends State<PlacePicker> with TickerProviderStateMixin 
         language: widget.localizationConfig.languageCode,
         location: _geocodingResult?.latLng,
         radius: widget.autocompletePlacesSearchRadius,
+        strictBounds: widget.strictBounds!,
+        region: widget.autocompletePlacesSearchRegion,
       );
 
       if (response.statusCode != 200) {
